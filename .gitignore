@@ -15,3 +15,4 @@ public/fonts/*
 !*.config.js
 !test/test.js
 start.sh
+package-lock.json
