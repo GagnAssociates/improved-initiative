@@ -189,6 +189,7 @@ export class TrackerViewModel {
     }
 
     public PatreonLoginUrl = env.PatreonLoginUrl;
+    public GoogleLoginUrl = env.GoogleLoginUrl;
     
     public InterfacePriority = ko.pureComputed(() => {
         if (this.CenterColumn() === "statblockeditor" || this.CenterColumn() === "spelleditor") {

@@ -5,6 +5,7 @@ interface Environment {
     HasStorage: boolean;
     HasEpicInitiative: boolean;
     PatreonLoginUrl: string;
+    GoogleLoginUrl: string;
 }
 
 export const env: Environment = {
@@ -13,7 +14,8 @@ export const env: Environment = {
     HasStorage: false,
     HasEpicInitiative: false,
     IsLoggedIn: false,
-    PatreonLoginUrl: "http://www.patreon.com/"
+    PatreonLoginUrl: "http://www.patreon.com/",
+    GoogleLoginUrl: "https://www.google.com/"
 };
 
 export function LoadEnvironment() {
@@ -29,5 +31,8 @@ export function LoadEnvironment() {
     env.IsLoggedIn = html.getAttribute("isLoggedIn") == "true";
     if (window["patreonUrl"]) {
         env.PatreonLoginUrl = window["patreonUrl"];
+    }
+    if (window["googleUrl"]) {
+        env.GoogleLoginUrl = window["googleUrl"];
     }
 }

@@ -1,0 +1,167 @@
+import express = require("express");
+import * as _ from "lodash";
+import request = require("request");
+import * as DB from "./dbconnection";
+
+import { User } from "./user";
+
+type Req = Express.Request & express.Request;
+type Res = Express.Response & express.Response;
+
+//const storageRewardIds = ["1322253", "1937132"];
+//const epicRewardIds = ["1937132"];
+
+const baseUrl = process.env.BASE_URL,
+    googleClientId = process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret = process.env.GOOGLE_CLIENT_SECRET,
+    googleUrl = process.env.GOOGLE_URL;
+
+const config = { googleClientId, googleClientSecret };
+var google = require("google-oauth2")(config);
+    //epicPatreonIds = (process.env.GOOGLE_ADDITIONAL_EPIC_USERIDS || "").split(",").map(s => s.trim());
+
+/*interface Post {
+    attributes: {
+        title: string;
+        content: string;
+        url: string;
+        created_at: string;
+        was_posted_by_campaign_owner: boolean;
+    };
+    id: string;
+    type: string;
+}*/
+
+/*interface Pledge {
+    id: string;
+    type: "pledge";
+    relationships: {
+        reward: { data: { id: string; } }
+    };
+}*/
+
+interface ApiResponse {
+    data: {
+        sub: string;
+    };
+}
+
+interface TokensResponse {
+    email: string;
+    iat: string;
+    exp: string;
+    scope: string;
+    token_type: string;
+}
+
+function handleCurrentUser(req: Req, res: Res, tokens: TokensResponse) {
+    return (currentUserError, apiResponse: ApiResponse) => {
+        if (currentUserError) {
+            console.error(currentUserError);
+            res.end(currentUserError);
+            return;
+        }
+
+        const encounterId = req.query.state.replace(/['"]/g, "");
+        //const relationships = apiResponse.included || [];
+
+        /*const userRewards = relationships.filter(i => i.type === "pledge").map((r: Pledge) => {
+            if (r.relationships && r.relationships.reward && r.relationships.reward.data) {
+                return r.relationships.reward.data.id;
+            } else {
+                return "none";
+            }
+        });*/
+
+        console.log(`api response: ${JSON.stringify(apiResponse.data)}`);
+
+        //const hasStorageReward = _.intersection(userRewards, storageRewardIds).length > 0;
+
+        //const hasEpicInitiativePromo = _.includes(epicPatreonIds, apiResponse.data.id);
+        //const hasEpicInitiativeReward = _.intersection(userRewards, epicRewardIds).length > 0;
+
+        //const hasEpicInitiative = hasEpicInitiativePromo || hasEpicInitiativeReward;
+
+        const standing = "epic";
+            /*hasEpicInitiative ? "epic" :
+                hasStorageReward ? "pledge" :
+                    "none";*/
+
+        req.session.hasStorage = true;
+        req.session.hasEpicInitiative = true;
+        req.session.isLoggedIn = true;
+
+        DB.upsertUser(apiResponse.data.sub, tokens.email, tokens.iat, standing)
+            .then(user => {
+                req.session.userId = user._id;
+                res.redirect(`/e/${encounterId}`);
+            }).catch(err => {
+                console.error(err);
+            });
+    };
+}
+
+export function configureLoginRedirect(app: express.Application) {
+    const redirectPath = "/r/google";
+    const redirectUri = baseUrl + redirectPath;
+    var tokens;
+    app.get(redirectPath, (req: Req, res: Res) => {
+        try {
+            const code = req.query.code;
+
+            google.getAuthCode("https://www.googleapis.com/auth/profile", (tokensError, tokens: TokensResponse) => {
+                if (tokensError) {
+                    console.error(tokensError);
+                    res.end(tokensError);
+                    return;
+                }
+
+                const APIClient = google.default(tokens.email);
+                APIClient(`/current_user`, handleCurrentUser(req, res, tokens));
+            });
+        } catch (e) {
+            res.status(500).send(e);
+        }
+    });
+}
+
+export function configureLogout(app: express.Application) {
+    const logoutPath = "/logout";
+    app.get(logoutPath, (req: Req, res: Res) => {
+        req.session.destroy(err => {
+            if (err) {
+                console.error(err);
+            }
+            return res.redirect(baseUrl);
+        });
+    });
+}
+
+/*function updateLatestPost(latestPost: { post: Post }) {
+    return request.get(patreonUrl,
+        (error, response, body) => {
+            const json: { data: Post[] } = JSON.parse(body);
+            if (json.data) {
+                latestPost.post = json.data.filter(d => d.attributes.was_posted_by_campaign_owner)[0];
+            }
+        });
+}*/
+
+/*export function startNewsUpdates(app: express.Application) {
+    const latest: { post: Post } = { post: null };
+    if (!patreonUrl) {
+        return;
+    }
+
+    updateLatestPost(latest);
+
+    app.get("/updatenews/", (req: Req, res: Res) => {
+        updateLatestPost(latest);
+        res.sendStatus(200);
+    });
+
+    app.get("/whatsnew/", (req, res) => {
+        res.json(latest.post);
+    });
+}*/
+

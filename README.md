@@ -28,6 +28,7 @@ You can configure your instance of Improved Initiative with these settings. All 
 * `DB_CONNECTION_STRING` - Requires a mongoDB connection string if you'd like to support user accounts
 * `KEEN_API_URL`, `KEEN_PROJECT_ID`, `KEEN_READ_KEY`, `KEEN_WRITE_KEY` - Configuration for metrics pipeline
 * `PATREON_URL`, `PATREON_CLIENT_ID`, `PATREON_CLIENT_SECRET` - Configuration for Patreon integration
+* `GOOGLE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Configuration for Google integration
 
 ## Docker
 
