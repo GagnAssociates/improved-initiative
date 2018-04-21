@@ -8,7 +8,10 @@ public/fonts/*
 *.css
 .tscache
 .vscode
+.vs/*
+*.komodoproject
 .baseDir
 !Gruntfile.js
 !*.config.js
 !test/test.js
+start.sh
