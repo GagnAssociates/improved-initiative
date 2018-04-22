@@ -3,6 +3,8 @@
     postedEncounter="{{postedEncounter}}" 
     hasStorage="{{hasStorage}}"
     hasEpicInitiative="{{hasEpicInitiative}}"
+    isLoggedInPatreon="{{isLoggedInPatreon}}"
+    isLoggedInGoogle="{{isLoggedInGoogle}}"
     isLoggedIn="{{isLoggedIn}}">
 <head>
     <link rel="stylesheet" type="text/css" href="{{rootDirectory}}/css/improved-initiative.css">
@@ -14,7 +16,7 @@
 
     <script type="text/javascript">
         window.patreonUrl = 'http://www.patreon.com/oauth2/authorize?response_type=code&client_id={{patreonClientId}}&redirect_uri={{{baseUrl}}}/r/patreon&state={{encounterId}}';
-        window.googleUrl = 'https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={{googleClientId}}&scope=profile&redirect_uri={{{baseUrl}}}/r/google-oauth2&state={{encounterId}}';
+        window.googleUrl = 'https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&response_type=code&client_id={{googleClientId}}&scope=profile&redirect_uri={{{baseUrl}}}/r/google-oauth2&state={{encounterId}}';
     </script>
     <script type="text/javascript" src="{{rootDirectory}}/js/dependencies.js"></script>
     <script type="text/javascript" src="{{rootDirectory}}/js/ImprovedInitiative.js"></script>
@@ -67,8 +69,10 @@
         }
     ">
     </div>
-    <!-- ko if: DisplayLogin -->
+    <!-- ko if: DisplayLoginPatreon -->
     <a class="login button" data-bind="attr: { href: PatreonLoginUrl }">Log In with Patreon</a>
+    <!-- /ko -->
+    <!-- ko if: DisplayLoginGoogle -->
     <a class="login button" data-bind="attr: { href: GoogleLoginUrl }">Log In with Google</a>
     <!-- /ko -->
     <div class="toolbar" data-bind="css: ToolbarClass">

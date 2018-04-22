@@ -2,11 +2,13 @@ import express = require("express");
 import * as _ from "lodash";
 import request = require("request");
 import * as DB from "./dbconnection";
-
+import jwt = require("jsonwebtoken");
 import { User } from "./user";
 
 type Req = Express.Request & express.Request;
 type Res = Express.Response & express.Response;
+
+declare const Promise: any;
 
 //const storageRewardIds = ["1322253", "1937132"];
 //const epicRewardIds = ["1937132"];
@@ -15,30 +17,24 @@ const baseUrl = process.env.BASE_URL,
     googleClientId = process.env.GOOGLE_CLIENT_ID,
     googleClientSecret = process.env.GOOGLE_CLIENT_SECRET,
     googleUrl = process.env.GOOGLE_URL;
+    
+
+
 
 const config = { googleClientId, googleClientSecret };
-var google = require("google-oauth2")(config);
-    //epicPatreonIds = (process.env.GOOGLE_ADDITIONAL_EPIC_USERIDS || "").split(",").map(s => s.trim());
+//var google = require("google-oauth2")(config);
+const { google } = require('googleapis');
+const oauth2Client = new google.auth.OAuth2(
+    googleClientId,
+    googleClientSecret,
+    baseUrl + "/r/google-oauth2"
+);
+//var profile = google.userinfo;
 
-/*interface Post {
-    attributes: {
-        title: string;
-        content: string;
-        url: string;
-        created_at: string;
-        was_posted_by_campaign_owner: boolean;
-    };
-    id: string;
-    type: string;
-}*/
 
-/*interface Pledge {
-    id: string;
-    type: "pledge";
-    relationships: {
-        reward: { data: { id: string; } }
-    };
-}*/
+google.options({ auth: oauth2Client });
+const scopes = ["https://www.googleapis.com/auth/profile"];
+
 
 interface ApiResponse {
     data: {
@@ -54,79 +50,61 @@ interface TokensResponse {
     token_type: string;
 }
 
-function handleCurrentUser(req: Req, res: Res, tokens: TokensResponse) {
-    return (currentUserError, apiResponse: ApiResponse) => {
-        if (currentUserError) {
-            console.error(currentUserError);
-            res.end(currentUserError);
-            return;
-        }
-
-        const encounterId = req.query.state.replace(/['"]/g, "");
-        //const relationships = apiResponse.included || [];
-
-        /*const userRewards = relationships.filter(i => i.type === "pledge").map((r: Pledge) => {
-            if (r.relationships && r.relationships.reward && r.relationships.reward.data) {
-                return r.relationships.reward.data.id;
-            } else {
-                return "none";
-            }
-        });*/
-
-        console.log(`api response: ${JSON.stringify(apiResponse.data)}`);
-
-        //const hasStorageReward = _.intersection(userRewards, storageRewardIds).length > 0;
-
-        //const hasEpicInitiativePromo = _.includes(epicPatreonIds, apiResponse.data.id);
-        //const hasEpicInitiativeReward = _.intersection(userRewards, epicRewardIds).length > 0;
-
-        //const hasEpicInitiative = hasEpicInitiativePromo || hasEpicInitiativeReward;
+function handleCurrentUser(req: Req, res: Res, tokens) {
+           const encounterId = req.query.state.replace(/['"]/g, "");
 
         const standing = "epic";
-            /*hasEpicInitiative ? "epic" :
-                hasStorageReward ? "pledge" :
-                    "none";*/
 
         req.session.hasStorage = true;
         req.session.hasEpicInitiative = true;
+        req.session.isLoggedInGoogle = true;
         req.session.isLoggedIn = true;
 
-        DB.upsertUser(apiResponse.data.sub, tokens.email, tokens.iat, standing)
+        var decoded = jwt.decode(tokens.id_token, { json: true, complete: true });
+    DB.upsertUser("", tokens.access_token, decoded.payload.iat, standing, decoded.payload.sub)
             .then(user => {
                 req.session.userId = user._id;
                 res.redirect(`/e/${encounterId}`);
             }).catch(err => {
                 console.error(err);
             });
-    };
+}
+
+function getOauth(code): Promise<any> {
+    
+    return new Promise(function (resolve, reject) { oauth2Client.getToken(code); });
+   
+}
+
+async function aGetOauth(code): Promise<any> {
+    getOauth(code).then(function (value) { return value; }).catch(function (err) { return ""; });
 }
 
 export function configureGoogleLoginRedirect(app: express.Application) {
     const redirectPath = "/r/google-oauth2";
     const redirectUri = baseUrl + redirectPath;
 
-    app.get(redirectPath, (req: Req, res: Res) => {
-        try {
+    app.get(redirectPath, async (req: Req, res: Res):Promise<any> => {
+        //try {
             const code = req.query.code;
-
-            google.getAuthCode("https://www.googleapis.com/auth/profile", (tokensError, tokens: TokensResponse) => {
-                if (tokensError) {
-                    console.error(tokensError);
-                    res.end(tokensError);
-                    return;
+            await oauth2Client.getToken(code, async function(err, tokens):Promise<any> {
+                if (err) {
+                    console.log(err);
+                    res.end(err);
+                    return {};
                 }
-
-                const APIClient = google.default(tokens.email);
-                APIClient(`/current_user`, handleCurrentUser(req, res, tokens));
+                else {
+                    oauth2Client.setCredentials(tokens);
+                    await handleCurrentUser(req, res, tokens);
+                    return {};
+                }
             });
-        } catch (e) {
-            res.status(500).send(e);
-        }
+        return {};
     });
 }
 
 export function configureGoogleLogout(app: express.Application) {
-    const logoutPath = "/logout";
+    const logoutPath = "/glogout";
     app.get(logoutPath, (req: Req, res: Res) => {
         req.session.destroy(err => {
             if (err) {
@@ -137,31 +115,4 @@ export function configureGoogleLogout(app: express.Application) {
     });
 }
 
-/*function updateLatestPost(latestPost: { post: Post }) {
-    return request.get(patreonUrl,
-        (error, response, body) => {
-            const json: { data: Post[] } = JSON.parse(body);
-            if (json.data) {
-                latestPost.post = json.data.filter(d => d.attributes.was_posted_by_campaign_owner)[0];
-            }
-        });
-}*/
-
-/*export function startNewsUpdates(app: express.Application) {
-    const latest: { post: Post } = { post: null };
-    if (!patreonUrl) {
-        return;
-    }
-
-    updateLatestPost(latest);
-
-    app.get("/updatenews/", (req: Req, res: Res) => {
-        updateLatestPost(latest);
-        res.sendStatus(200);
-    });
-
-    app.get("/whatsnew/", (req, res) => {
-        res.json(latest.post);
-    });
-}*/
 

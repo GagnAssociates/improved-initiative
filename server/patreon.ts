@@ -91,9 +91,10 @@ function handleCurrentUser(req: Req, res: Res, tokens: TokensResponse) {
 
         req.session.hasStorage = hasEpicInitiative || hasStorageReward;
         req.session.hasEpicInitiative = hasEpicInitiative;
+        req.session.isLoggedInPatreon = true;
         req.session.isLoggedIn = true;
 
-        DB.upsertUser(apiResponse.data.id, tokens.access_token, tokens.refresh_token, standing)
+        DB.upsertUser(apiResponse.data.id, tokens.access_token, tokens.refresh_token, standing,"")
             .then(user => {
                 req.session.userId = user._id;
                 res.redirect(`/e/${encounterId}`);

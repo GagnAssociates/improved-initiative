@@ -22,7 +22,7 @@ export const initialize = () => {
     });
 };
 
-export function upsertUser(patreonId: string, accessKey: string, refreshKey: string, accountStatus: string) {
+export function upsertUser(patreonId: string, accessKey: string, refreshKey: string, accountStatus: string, googleId: string) {
     if (!connectionString) {
         console.error("No connection string found.");
         return;
@@ -33,7 +33,7 @@ export function upsertUser(patreonId: string, accessKey: string, refreshKey: str
             const users = db.collection<User>("users");
             return users.findOneAndUpdate(
                 {
-                    patreonId
+                    $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId } }]
                 },
                 {
                     $set: {
@@ -41,6 +41,7 @@ export function upsertUser(patreonId: string, accessKey: string, refreshKey: str
                         accessKey,
                         refreshKey,
                         accountStatus,
+                        googleId,
                     },
                     $setOnInsert: {
                         statblocks: {},
@@ -55,7 +56,7 @@ export function upsertUser(patreonId: string, accessKey: string, refreshKey: str
                 })
                 .then(res => {
                     return users.findOne({
-                        patreonId
+                        $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId }}]
                     });
                 });
         });

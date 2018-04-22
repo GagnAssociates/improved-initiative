@@ -15,6 +15,8 @@ export class AccountViewModel {
     constructor(private libraries: Libraries) { }
 
     public IsLoggedIn = env.IsLoggedIn;
+    public IsLoggedInPatreon = env.IsLoggedInPatreon;
+    public IsLoggedInGoogle = env.IsLoggedInGoogle;
     public HasStorage = env.HasStorage;
     public HasEpicInitiative = env.HasEpicInitiative;
     public PatreonLoginUrl = env.PatreonLoginUrl;

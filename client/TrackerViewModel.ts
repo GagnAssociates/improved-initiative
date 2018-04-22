@@ -142,7 +142,8 @@ export class TrackerViewModel {
         }
     }
 
-    public DisplayLogin = !env.IsLoggedIn;
+    public DisplayLoginGoogle = !env.IsLoggedInGoogle;
+    public DisplayLoginPatreon = !env.IsLoggedInPatreon;
 
     public CenterColumn = ko.pureComputed(() => {
         const editStatBlock = this.StatBlockEditor.HasStatBlock();

@@ -31,6 +31,8 @@ const pageRenderOptions = (encounterId: string, session: Express.Session) => ({
     patreonClientId,
     googleClientId,
     isLoggedIn: session.isLoggedIn || false,
+    isLoggedInPatreon: session.isLoggedInPatreon || false,
+    isLoggedInGoogle: session.isLoggedInGoogle || false,
     hasStorage: session.hasStorage || false,
     hasEpicInitiative: session.hasEpicInitiative || false,
     postedEncounter: null,
@@ -96,9 +98,11 @@ export default function (app: express.Application, statBlockLibrary: Library<Sta
             }
 
             req.session.isLoggedIn = true;
+            req.session.isLoggedInGoogle = true;
+            req.session.isLoggedInPatreon = true;
 
             if (process.env.DB_CONNECTION_STRING) {
-                upsertUser("defaultPatreonId", "accesskey", "refreshkey", "pledge")
+                upsertUser("defaultPatreonId", "accesskey", "refreshkey", "pledge","defaultGoogleId")
                 .then(result => {
                     req.session.userId = result._id;
                     res.render("landing", renderOptions);
@@ -170,5 +174,5 @@ export default function (app: express.Application, statBlockLibrary: Library<Sta
     configureGoogleLoginRedirect(app);
     configureGoogleLogout(app);
     configureStorageRoutes(app);
-    startNewsUpdates(app);
+    //startNewsUpdates(app);
 }
