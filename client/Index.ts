@@ -15,7 +15,7 @@ $(() => {
         let viewModel = new TrackerViewModel();
         ko.applyBindings(viewModel, document.body);
         viewModel.ImportEncounterIfAvailable();
-        viewModel.GetWhatsNewIfAvailable();
+        //viewModel.GetWhatsNewIfAvailable();
     }
     if ($("#playerview").length) {
         let encounterId = env.EncounterId;

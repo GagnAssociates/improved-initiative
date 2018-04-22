@@ -101,10 +101,10 @@ function handleCurrentUser(req: Req, res: Res, tokens: TokensResponse) {
     };
 }
 
-export function configureLoginRedirect(app: express.Application) {
-    const redirectPath = "/r/google";
+export function configureGoogleLoginRedirect(app: express.Application) {
+    const redirectPath = "/r/google-oauth2";
     const redirectUri = baseUrl + redirectPath;
-    var tokens;
+
     app.get(redirectPath, (req: Req, res: Res) => {
         try {
             const code = req.query.code;
@@ -125,7 +125,7 @@ export function configureLoginRedirect(app: express.Application) {
     });
 }
 
-export function configureLogout(app: express.Application) {
+export function configureGoogleLogout(app: express.Application) {
     const logoutPath = "/logout";
     app.get(logoutPath, (req: Req, res: Res) => {
         req.session.destroy(err => {

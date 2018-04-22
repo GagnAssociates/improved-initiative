@@ -13,10 +13,12 @@ import { upsertUser } from "./dbconnection";
 import { Library } from "./library";
 import { configureMetricsRoutes } from "./metrics";
 import { configureLoginRedirect, configureLogout, startNewsUpdates } from "./patreon";
+import { configureGoogleLoginRedirect, configureGoogleLogout } from "./google-oauth2";
 import configureStorageRoutes from "./storageroutes";
 
 const baseUrl = process.env.BASE_URL || "";
 const patreonClientId = process.env.PATREON_CLIENT_ID || "PATREON_CLIENT_ID";
+const googleClientId = process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID";
 const defaultAccountLevel = process.env.DEFAULT_ACCOUNT_LEVEL || "free";
 
 type Req = Express.Request & express.Request;
@@ -27,6 +29,7 @@ const pageRenderOptions = (encounterId: string, session: Express.Session) => ({
     encounterId,
     baseUrl,
     patreonClientId,
+    googleClientId,
     isLoggedIn: session.isLoggedIn || false,
     hasStorage: session.hasStorage || false,
     hasEpicInitiative: session.hasEpicInitiative || false,
@@ -164,6 +167,8 @@ export default function (app: express.Application, statBlockLibrary: Library<Sta
 
     configureLoginRedirect(app);
     configureLogout(app);
+    configureGoogleLoginRedirect(app);
+    configureGoogleLogout(app);
     configureStorageRoutes(app);
     startNewsUpdates(app);
 }

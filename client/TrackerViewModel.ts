@@ -181,12 +181,12 @@ export class TrackerViewModel {
         }
     }
 
-    public GetWhatsNewIfAvailable = () => {
+    /*public GetWhatsNewIfAvailable = () => {
         $.getJSON("/whatsnew/")
             .done((latestPost: PatreonPost) => {
                 this.EventLog.AddEvent(`Welcome to Improved Initiative! Here's what's new: <a href="${latestPost.attributes.url}" target="_blank">${latestPost.attributes.title}</a>`);
             });
-    }
+    }*/
 
     public PatreonLoginUrl = env.PatreonLoginUrl;
     public GoogleLoginUrl = env.GoogleLoginUrl;
