@@ -33,7 +33,19 @@ export function upsertUser(patreonId: string, accessKey: string, refreshKey: str
             const users = db.collection<User>("users");
             return users.findOneAndUpdate(
                 {
-                    $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId } }]
+                    $or: [{
+                        $and: [{
+                            patreonId: { $eq: patreonId }
+                        }, {
+                            patreonId: { $ne: "" }
+                        }]
+                    }, {
+                        $and: [{
+                            googleId: { $eq: googleId }
+                        }, {
+                            googleId: { $ne: "" }
+                        }]
+                        }]
                 },
                 {
                     $set: {
@@ -56,7 +68,19 @@ export function upsertUser(patreonId: string, accessKey: string, refreshKey: str
                 })
                 .then(res => {
                     return users.findOne({
-                        $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId }}]
+                        $or: [{
+                            $and: [{
+                                patreonId: { $eq: patreonId }
+                            }, {
+                                patreonId: { $ne: "" }
+                            }]
+                        }, {
+                            $and: [{
+                                googleId: { $eq: googleId }
+                            }, {
+                                googleId: { $ne: "" }
+                            }]
+                        }]
                     });
                 });
         });
