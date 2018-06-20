@@ -4,7 +4,7 @@
 
 @primary-red: #db3131;
 @hover-red: lighten(@primary-red, 10);
-@active-red: lighten(@primary-red, 15);
+@active-red: lighten(@primary-red, 5);
 
 @primary-white: #EAE0D5;
 @input-white: @primary-white;
@@ -195,6 +195,7 @@ input, textarea {
     &.active {
         border-color: @active-green;
         background-color: @active-white;
+        color: @active-red;
     }
 
     &.header {
