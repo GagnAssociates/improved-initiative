@@ -1,6 +1,6 @@
-import { PlayerViewSettings } from "../common/PlayerViewSettings";
+import { PlayerViewSettings } from "./PlayerViewSettings";
 
 export interface PlayerView {
-    encounterState: any;
-    settings: PlayerViewSettings;
+    encounterState: any | null;
+    settings: PlayerViewSettings | null;
 }

@@ -1,9 +1,28 @@
+export type HpVerbosityOption =
+    "Actual HP" |
+    "Colored Label" |
+    "Monochrome Label" |
+    "Damage Taken" |
+    "Hide All";
+
+export const HpVerbosityOptions: HpVerbosityOption [] = [
+    "Actual HP",
+    "Colored Label",
+    "Monochrome Label",
+    "Damage Taken",
+    "Hide All"
+];
+
 export interface PlayerViewSettings {
+    ActiveCombatantOnTop: boolean;
     AllowPlayerSuggestions: boolean;
-    MonsterHPVerbosity: string;
+    MonsterHPVerbosity: HpVerbosityOption;
+    PlayerHPVerbosity: HpVerbosityOption;
     HideMonstersOutsideEncounter: boolean;
     DisplayRoundCounter: boolean;
     DisplayTurnTimer: boolean;
+    DisplayPortraits: boolean;
+    SplashPortraits: boolean;
     CustomCSS: string;
     CustomStyles: PlayerViewCustomStyles;
 }

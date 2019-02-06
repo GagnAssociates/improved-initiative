@@ -1,18 +1,20 @@
 import bodyParser = require("body-parser");
-import dbSession = require("connect-mongodb-session");
 import express = require("express");
-import session = require("express-session");
 import moment = require("moment");
 import mustacheExpress = require("mustache-express");
-import request = require("request");
 
-import { Spell } from "../client/Spell/Spell";
-import { StatBlock } from "../client/StatBlock/StatBlock";
+import { Spell } from "../common/Spell";
+import { StatBlock } from "../common/StatBlock";
 import { probablyUniqueString } from "../common/Toolbox";
 import { upsertUser } from "./dbconnection";
 import { Library } from "./library";
 import { configureMetricsRoutes } from "./metrics";
-import { configureLoginRedirect, configureLogout, startNewsUpdates } from "./patreon";
+import {
+  configureLoginRedirect,
+  configureLogout,
+  startNewsUpdates
+} from "./patreon";
+import { PlayerViewManager } from "./playerviewmanager";
 import configureStorageRoutes from "./storageroutes";
 
 const baseUrl = process.env.BASE_URL || "";
@@ -22,148 +24,184 @@ const defaultAccountLevel = process.env.DEFAULT_ACCOUNT_LEVEL || "free";
 type Req = Express.Request & express.Request;
 type Res = Express.Response & express.Response;
 
-const pageRenderOptions = (encounterId: string, session: Express.Session) => ({
-    rootDirectory: "../../",
-    encounterId,
-    baseUrl,
-    patreonClientId,
-    isLoggedIn: session.isLoggedIn || false,
-    hasStorage: session.hasStorage || false,
-    hasEpicInitiative: session.hasEpicInitiative || false,
-    postedEncounter: null,
+interface IPageRenderOptions {
+  rootDirectory: string;
+  encounterId: string;
+  baseUrl: string;
+  patreonClientId: string;
+  isLoggedIn: boolean;
+  hasStorage: boolean;
+  hasEpicInitiative: boolean;
+  postedEncounter: string | null;
+  appVersion: string;
+}
+
+const appVersion = require("../package.json").version;
+
+const pageRenderOptions = (session: Express.Session): IPageRenderOptions => ({
+  rootDirectory: "../..",
+  encounterId: session.encounterId || probablyUniqueString(),
+  baseUrl,
+  patreonClientId,
+  isLoggedIn: session.isLoggedIn || false,
+  hasStorage: session.hasStorage || false,
+  hasEpicInitiative: session.hasEpicInitiative || false,
+  postedEncounter: null,
+  appVersion: appVersion
 });
 
-const initializeNewPlayerView = (playerViews) => {
-    const encounterId = probablyUniqueString();
-    playerViews[encounterId] = {};
-    return encounterId;
-};
+export default function(
+  app: express.Application,
+  statBlockLibrary: Library<StatBlock>,
+  spellLibrary: Library<Spell>,
+  playerViews: PlayerViewManager
+) {
+  const mustacheEngine = mustacheExpress();
 
-export default function (app: express.Application, statBlockLibrary: Library<StatBlock>, spellLibrary: Library<Spell>, playerViews) {
-    const mustacheEngine = mustacheExpress();
-    const MongoDBStore = dbSession(session);
-    let store = null;
-    
-    if (process.env.DB_CONNECTION_STRING) {
-        store = new MongoDBStore(
-            {
-                uri: process.env.DB_CONNECTION_STRING,
-                collection: "sessions"
-            });
+  let cacheMaxAge = moment.duration(7, "days").asMilliseconds();
+  if (process.env.NODE_ENV === "development") {
+    mustacheEngine.cache._max = 0;
+    cacheMaxAge = 0;
+  }
+
+  app.engine("html", mustacheEngine);
+  app.set("view engine", "html");
+  app.set("views", __dirname + "/../html");
+
+  app.use(express.static(__dirname + "/../public", { maxAge: cacheMaxAge }));
+
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: false }));
+
+  configureMetricsRoutes(app);
+
+  app.get("/", async (req: Req, res: Res) => {
+    const session = req.session;
+    if (session === undefined) {
+      throw "Session is not available";
     }
 
-    if (process.env.NODE_ENV === "development") {
-        mustacheEngine.cache._max = 0;
+    session.encounterId = playerViews.InitializeNew();
+
+    if (defaultAccountLevel !== "free") {
+      return await setupLocalDefaultUser(session, res);
+    } else {
+      const renderOptions = pageRenderOptions(session);
+      return res.render("landing", renderOptions);
+    }
+  });
+
+  app.get("/e/:id", (req: Req, res: Res) => {
+    const session = req.session;
+    if (session === undefined) {
+      throw "Session is not available";
+    }
+    session.encounterId = req.params.id;
+
+    res.redirect("/e/");
+  });
+
+  app.get("/e/", (req: Req, res: Res) => {
+    const session = req.session;
+    if (session === undefined) {
+      throw "Session is not available";
     }
 
-    app.engine("html", mustacheEngine);
-    app.set("view engine", "html");
-    app.set("views", __dirname + "/../html");
+    const options = pageRenderOptions(session);
+    if (session.postedEncounter) {
+      options.postedEncounter = JSON.stringify(session.postedEncounter);
+      delete session.postedEncounter;
+    }
+    res.render("tracker", options);
+  });
 
-    app.use(express.static(__dirname + "/../public"));
+  app.get("/p/:id", (req: Req, res: Res) => {
+    const session = req.session;
+    if (session == null) {
+      throw "Session is not available";
+    }
 
-    const cookie = {
-        maxAge: moment.duration(1, "weeks").asMilliseconds(),
-    };
+    session.encounterId = req.params.id;
+    res.render("playerview", pageRenderOptions(session));
+  });
 
-    app.use(session({
-        store: store || null,
-        secret: process.env.SESSION_SECRET || probablyUniqueString(),
-        resave: false,
-        saveUninitialized: false,
-        cookie
-    }));
+  app.get("/playerviews/:id", (req: Req, res: Res) => {
+    res.json(playerViews.Get(req.params.id));
+  });
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
+  app.get("/templates/:name", (req: Req, res: Res) => {
+    const session = req.session;
+    if (session == null) {
+      throw "Session is not available";
+    }
 
-    configureMetricsRoutes(app);
-    
-    app.get("/", (req: Req, res: Res) => {
-        const renderOptions = pageRenderOptions(initializeNewPlayerView(playerViews), req.session);
-        if (defaultAccountLevel !== "free") {
+    res.render(`templates/${req.params.name}`, pageRenderOptions(session));
+  });
 
-            if (defaultAccountLevel === "accountsync") {
-                req.session.hasStorage = true;
-            }
+  app.get(statBlockLibrary.Route(), (req: Req, res: Res) => {
+    res.json(statBlockLibrary.GetListings());
+  });
 
-            if (defaultAccountLevel === "epicinitiative") {
-                req.session.hasStorage = true;
-                req.session.hasEpicInitiative = true;
-            }
+  app.get(statBlockLibrary.Route() + ":id", (req: Req, res: Res) => {
+    res.json(statBlockLibrary.GetById(req.params.id));
+  });
 
-            req.session.isLoggedIn = true;
+  app.get(spellLibrary.Route(), (req: Req, res: Res) => {
+    res.json(spellLibrary.GetListings());
+  });
 
-            if (process.env.DB_CONNECTION_STRING) {
-                upsertUser("defaultPatreonId", "accesskey", "refreshkey", "pledge")
-                .then(result => {
-                    req.session.userId = result._id;
-                    res.render("landing", renderOptions);
-                });
-            } else {
-                req.session.userId = probablyUniqueString();
-                res.render("landing", renderOptions);
-            }
-        } else {
-            res.render("landing", renderOptions);
-        }
-    });
+  app.get(spellLibrary.Route() + ":id", (req: Req, res: Res) => {
+    res.json(spellLibrary.GetById(req.params.id));
+  });
 
-    app.get("/e/:id", (req: Req, res: Res) => {
-        const session: any = req.session;
-        const options = pageRenderOptions(req.params.id, req.session);
-        if (session.postedEncounter) {
-            options.postedEncounter = JSON.stringify(session.postedEncounter);
-        }
-        res.render("tracker", options);
-    });
+  const importEncounter = (req, res: Res) => {
+    const newViewId = playerViews.InitializeNew();
+    const session = req.session;
 
-    app.get("/p/:id", (req: Req, res: Res) => {
-        res.render("playerview", pageRenderOptions(req.params.id, req.session));
-    });
+    if (typeof req.body.Combatants === "string") {
+      session.postedEncounter = { Combatants: JSON.parse(req.body.Combatants) };
+    } else {
+      session.postedEncounter = req.body;
+    }
 
-    app.get("/playerviews/:id", (req: Req, res: Res) => {
-        res.json(playerViews[req.params.id]);
-    });
+    res.redirect("/e/" + newViewId);
+  };
 
-    app.get("/templates/:name", (req: Req, res: Res) => {
-        res.render(`templates/${req.params.name}`, pageRenderOptions("", req.session));
-    });
+  app.post("/launchencounter/", importEncounter);
+  app.post("/importencounter/", importEncounter);
 
-    app.get(statBlockLibrary.Route(), (req: Req, res: Res) => {
-        res.json(statBlockLibrary.GetListings());
-    });
+  app.get("/transferlocalstorage/", (req: Req, res: Res) => {
+    res.render("transferlocalstorage", { baseUrl });
+  });
 
-    app.get(statBlockLibrary.Route() + ":id", (req: Req, res: Res) => {
-        res.json(statBlockLibrary.GetById(req.params.id));
-    });
+  configureLoginRedirect(app);
+  configureLogout(app);
+  configureStorageRoutes(app);
+  startNewsUpdates(app);
+}
 
-    app.get(spellLibrary.Route(), (req: Req, res: Res) => {
-        res.json(spellLibrary.GetListings());
-    });
+async function setupLocalDefaultUser(session: Express.Session, res: Res) {
+  if (defaultAccountLevel === "accountsync") {
+    session.hasStorage = true;
+  }
 
-    app.get(spellLibrary.Route() + ":id", (req: Req, res: Res) => {
-        res.json(spellLibrary.GetById(req.params.id));
-    });
+  if (defaultAccountLevel === "epicinitiative") {
+    session.hasStorage = true;
+    session.hasEpicInitiative = true;
+  }
 
-    const importEncounter = (req, res: Res) => {
-        const newViewId = initializeNewPlayerView(playerViews);
-        const session = req.session;
+  session.isLoggedIn = true;
 
-        if (typeof req.body.Combatants === "string") {
-            session.postedEncounter = { Combatants: JSON.parse(req.body.Combatants) };
-        } else {
-            session.postedEncounter = req.body;
-        }
+  const user = await upsertUser(
+    "defaultPatreonId",
+    "accesskey",
+    "refreshkey",
+    "pledge"
+  );
 
-        res.redirect("/e/" + newViewId);
-    };
+  if (user) {
+    session.userId = user._id;
+  }
 
-    app.post("/launchencounter/", importEncounter);
-    app.post("/importencounter/", importEncounter);
-
-    configureLoginRedirect(app);
-    configureLogout(app);
-    configureStorageRoutes(app);
-    startNewsUpdates(app);
+  return res.render("landing", pageRenderOptions(session));
 }
