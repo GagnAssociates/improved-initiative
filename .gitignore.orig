@@ -1,0 +1,23 @@
+node_modules/*
+typings/*
+public/user/*
+public/webfonts/*
+*.log
+*.js.map
+*.js
+*.css
+*.tmp.txt
+.tscache
+.vscode
+.vs/*
+*.komodoproject
+.baseDir
+!Gruntfile.js
+<<<<<<< HEAD
+!*.config.js
+!test/test.js
+start.sh
+=======
+!webpack.*.js
+!test/test.js
+>>>>>>> 5ff095c9289907be3ac0c4d8d0ee8688b88bdfe5
