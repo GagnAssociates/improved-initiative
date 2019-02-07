@@ -130,13 +130,15 @@ async function handleCurrentUser(
 
   session.hasStorage = hasEpicInitiative || hasStorageReward;
   session.hasEpicInitiative = hasEpicInitiative;
+  session.isLoggedInPatreon = true;
   session.isLoggedIn = true;
 
   const user = await DB.upsertUser(
     apiResponse.data.id,
     tokens.access_token,
     tokens.refresh_token,
-    standing
+    standing,
+    ""
   );
   if (user === undefined) {
     throw "Failed to insert user into database";

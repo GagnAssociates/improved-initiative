@@ -30,6 +30,8 @@ interface IPageRenderOptions {
   baseUrl: string;
   patreonClientId: string;
   isLoggedIn: boolean;
+  isLoggedInPatreon: boolean;
+  isLoggedInGoogle: boolean;
   hasStorage: boolean;
   hasEpicInitiative: boolean;
   postedEncounter: string | null;
@@ -44,6 +46,8 @@ const pageRenderOptions = (session: Express.Session): IPageRenderOptions => ({
   baseUrl,
   patreonClientId,
   isLoggedIn: session.isLoggedIn || false,
+  isLoggedInPatreon: session.isLoggedInPatreon || false,
+  isLoggedInGoogle: session.isLoggedInGoogle || false,
   hasStorage: session.hasStorage || false,
   hasEpicInitiative: session.hasEpicInitiative || false,
   postedEncounter: null,
@@ -191,12 +195,15 @@ async function setupLocalDefaultUser(session: Express.Session, res: Res) {
   }
 
   session.isLoggedIn = true;
+  session.isLoggedInGoogle = true;
+  session.isLoggedInPatreon = true;
 
   const user = await upsertUser(
     "defaultPatreonId",
     "accesskey",
     "refreshkey",
-    "pledge"
+    "pledge",
+    "defaultGoogleId"
   );
 
   if (user) {

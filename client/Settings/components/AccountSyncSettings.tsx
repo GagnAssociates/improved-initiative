@@ -31,8 +31,12 @@ export class AccountSyncSettings extends React.Component<
     };
   }
   public render() {
-    if (!env.IsLoggedIn) {
-      return this.loginMessage();
+    if (!env.IsLoggedInPatreon) {
+      return this.loginMessagePatreon();
+    }
+
+    if (!env.IsLoggedInGoogle) {
+      return this.loginMessageGoogle();
     }
 
     if (!env.HasStorage) {
@@ -86,7 +90,7 @@ export class AccountSyncSettings extends React.Component<
     );
   }
 
-  private loginMessage() {
+  private loginMessagePatreon() {
     return (
       <React.Fragment>
         <p>
@@ -94,6 +98,20 @@ export class AccountSyncSettings extends React.Component<
           to access your custom statblocks and encounters from anywhere!
         </p>
         <a className="login button" href={env.PatreonLoginUrl}>
+          Log In with Patreon
+        </a>
+      </React.Fragment>
+    );
+  }
+
+  private loginMessageGoogle() {
+    return (
+      <React.Fragment>
+        <p>
+          Log in with Patreon to access patron benefits. Account Sync allows you
+          to access your custom statblocks and encounters from anywhere!
+        </p>
+        <a className="login button" href={env.GoogleLoginUrl}>
           Log In with Patreon
         </a>
       </React.Fragment>

@@ -64,7 +64,10 @@ export class TrackerViewModel {
   public ToolbarWide = ko.observable(false);
 
   public DisplayLogin = !env.IsLoggedIn;
+  public DisplayLoginGoogle = !env.IsLoggedInGoogle;
+  public DisplayLoginPatreon = !env.IsLoggedInPatreon;
   public PatreonLoginUrl = env.PatreonLoginUrl;
+  public GoogleLoginUrl = env.GoogleLoginUrl;
 
   constructor(private Socket: SocketIOClient.Socket) {
     ConfigureCommands([

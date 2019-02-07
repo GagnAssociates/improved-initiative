@@ -33,7 +33,8 @@ export async function upsertUser(
   patreonId: string,
   accessKey: string,
   refreshKey: string,
-  accountStatus: string
+  accountStatus: string,
+  googleId: string
 ) {
   if (!connectionString) {
     console.error("No connection string found.");
@@ -45,14 +46,15 @@ export async function upsertUser(
   const users = await db.collection<User>("users");
   const result = await users.findOneAndUpdate(
     {
-      patreonId
+      $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId } }]
     },
     {
       $set: {
         patreonId,
         accessKey,
         refreshKey,
-        accountStatus
+        accountStatus,
+        googleId
       },
       $setOnInsert: {
         statblocks: {},
