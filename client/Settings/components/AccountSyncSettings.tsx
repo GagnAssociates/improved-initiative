@@ -30,14 +30,24 @@ export class AccountSyncSettings extends React.Component<
       syncError: ""
     };
   }
+  public logoutURL: string;
   public render() {
-    if (!env.IsLoggedInPatreon) {
+    if (env.IsLoggedInGoogle) {
+      this.logoutURL = "/glogout";
+    } else {
+      this.logoutURL = "/logout";
+    }
+    if (!env.IsLoggedInGoogle && !env.IsLoggedInPatreon) {
+      return this.loginMessageGooglePatreon();
+    }
+
+    /* if (!env.IsLoggedInPatreon) {
       return this.loginMessagePatreon();
     }
 
     if (!env.IsLoggedInGoogle) {
       return this.loginMessageGoogle();
-    }
+    }*/
 
     if (!env.HasStorage) {
       return this.noSyncMessage();
@@ -83,7 +93,8 @@ export class AccountSyncSettings extends React.Component<
           <Button fontAwesomeIcon="trash" onClick={this.deleteAccount} />
           Delete all synced account data
         </p>
-        <a className="button logout" href="/logout">
+
+        <a className="button logout" href={this.logoutURL}>
           Log Out
         </a>
       </React.Fragment>
@@ -108,11 +119,32 @@ export class AccountSyncSettings extends React.Component<
     return (
       <React.Fragment>
         <p>
-          Log in with Patreon to access patron benefits. Account Sync allows you
+          Log in with Google to access patron benefits. Account Sync allows you
           to access your custom statblocks and encounters from anywhere!
         </p>
         <a className="login button" href={env.GoogleLoginUrl}>
+          Log In with Google
+        </a>
+      </React.Fragment>
+    );
+  }
+
+  private loginMessageGooglePatreon() {
+    return (
+      <React.Fragment>
+        <p>
+          Log in with Patreon to access patron benefits. Account Sync allows you
+          to access your custom statblocks and encounters from anywhere!
+        </p>
+        <a className="login button" href={env.PatreonLoginUrl}>
           Log In with Patreon
+        </a>
+        <p>
+          Log in with Google to access patron benefits. Account Sync allows you
+          to access your custom statblocks and encounters from anywhere!
+        </p>
+        <a className="login button" href={env.GoogleLoginUrl}>
+          Log In with Google
         </a>
       </React.Fragment>
     );
@@ -131,12 +163,21 @@ export class AccountSyncSettings extends React.Component<
           </a>
           reward level.
         </p>
-        <a className="button logout" href="/logout">
+        <a className="button logout" href={this.logoutURL}>
           Log Out
         </a>
       </React.Fragment>
     );
   }
+
+  /*private logoutURL: string = function() {
+        if (env.IsLoggedInGoogle) {
+            return `/glogout`;
+        }
+        else {
+            return `/logout`;
+        }
+    }*/
 
   private syncCount = (libraryName: string, syncCount: string) => (
     <span className="sync-counts__row">

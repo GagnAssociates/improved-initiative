@@ -7,6 +7,10 @@ import { Spell } from "../common/Spell";
 import { StatBlock } from "../common/StatBlock";
 import { probablyUniqueString } from "../common/Toolbox";
 import { upsertUser } from "./dbconnection";
+import {
+    configureGoogleLoginRedirect,
+    configureGoogleLogout
+} from "./google-oauth2";
 import { Library } from "./library";
 import { configureMetricsRoutes } from "./metrics";
 import {
@@ -19,6 +23,7 @@ import configureStorageRoutes from "./storageroutes";
 
 const baseUrl = process.env.BASE_URL || "";
 const patreonClientId = process.env.PATREON_CLIENT_ID || "PATREON_CLIENT_ID";
+const googleClientId = process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID";
 const defaultAccountLevel = process.env.DEFAULT_ACCOUNT_LEVEL || "free";
 
 type Req = Express.Request & express.Request;
@@ -28,7 +33,8 @@ interface IPageRenderOptions {
   rootDirectory: string;
   encounterId: string;
   baseUrl: string;
-  patreonClientId: string;
+    patreonClientId: string;
+    googleClientId: string;
   isLoggedIn: boolean;
   isLoggedInPatreon: boolean;
   isLoggedInGoogle: boolean;
@@ -44,7 +50,8 @@ const pageRenderOptions = (session: Express.Session): IPageRenderOptions => ({
   rootDirectory: "../..",
   encounterId: session.encounterId || probablyUniqueString(),
   baseUrl,
-  patreonClientId,
+    patreonClientId,
+  googleClientId,
   isLoggedIn: session.isLoggedIn || false,
   isLoggedInPatreon: session.isLoggedInPatreon || false,
   isLoggedInGoogle: session.isLoggedInGoogle || false,
@@ -179,7 +186,9 @@ export default function(
   });
 
   configureLoginRedirect(app);
+  configureGoogleLoginRedirect(app);
   configureLogout(app);
+  configureGoogleLogout(app);
   configureStorageRoutes(app);
   startNewsUpdates(app);
 }

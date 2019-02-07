@@ -43,14 +43,17 @@ export class EpicInitiativeSettings extends React.Component<
     (this.props.playerViewSettings.SplashPortraits = s);
 
   public render() {
-    if (!env.IsLoggedInPatreon) {
+    if (!env.IsLoggedInGoogle && !env.IsLoggedInPatreon) {
+      return this.loginMessageGooglePatreon();
+    }
+    /* if (!env.IsLoggedInPatreon) {
       return this.loginMessagePatreon();
     }
 
     if (!env.IsLoggedInGoogle) {
       return this.loginMessageGoogle();
     }
-
+    */
     return (
       <div className="c-epic-initiative-settings">
         <h3>Epic Initiative</h3>
@@ -101,6 +104,28 @@ export class EpicInitiativeSettings extends React.Component<
   private loginMessageGoogle = () => (
     <React.Fragment>
       <h3>Epic Initiative</h3>
+      <p>
+        Log in with Google to access patron benefits. Epic Initiative allows you
+        to customize your Player View's appearance with combatant portraits,
+        custom colors, fonts, and other CSS features.
+      </p>
+      <a className="login button" href={env.GoogleLoginUrl}>
+        Log In with Google
+      </a>
+    </React.Fragment>
+  );
+
+  private loginMessageGooglePatreon = () => (
+    <React.Fragment>
+      <h3>Epic Initiative</h3>
+      <p>
+        Log in with Patreon to access patron benefits. Epic Initiative allows
+        you to customize your Player View's appearance with combatant portraits,
+        custom colors, fonts, and other CSS features.
+      </p>
+      <a className="login button" href={env.PatreonLoginUrl}>
+        Log In with Patreon
+      </a>
       <p>
         Log in with Google to access patron benefits. Epic Initiative allows you
         to customize your Player View's appearance with combatant portraits,

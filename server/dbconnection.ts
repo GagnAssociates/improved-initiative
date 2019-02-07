@@ -46,7 +46,28 @@ export async function upsertUser(
   const users = await db.collection<User>("users");
   const result = await users.findOneAndUpdate(
     {
-      $or: [{ patreonId: { $eq: patreonId } }, { googleId: { $eq: googleId } }]
+      $or: [
+        {
+          $and: [
+            {
+              patreonId: { $eq: patreonId }
+            },
+            {
+              patreonId: { $ne: "" }
+            }
+          ]
+        },
+        {
+          $and: [
+            {
+              googleId: { $eq: googleId }
+            },
+            {
+              googleId: { $ne: "" }
+            }
+          ]
+        }
+      ]
     },
     {
       $set: {
